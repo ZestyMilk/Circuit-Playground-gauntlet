@@ -11,11 +11,6 @@
 #include <math.h>
 #endif
 
-#include "Adafruit_BLE.h"
-#include "Adafruit_BluefruitLE_SPI.h"
-#include "Adafruit_BluefruitLE_UART.h"
-#include "BluefruitConfig.h"
-
 #include "Adafruit_CircuitPlayground.h"
 
 
@@ -35,7 +30,7 @@
 #define INPUT_FLOOR 10 //Lower range of analogRead input
 #define INPUT_CEILING 300 //Max range of analogRead input, the lower the value the more sensitive (1023 = max)
 
-#define TONE_DURATION_MS 100
+#define TONE_DURATION_MS 50
  
  
  
@@ -45,7 +40,7 @@ unsigned int sample;
 byte dotCount = 0;  //Frame counter for peak dot
 byte dotHangCount = 0; //Frame counter for holding peak dot
  
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(N_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
+
 
 // From adaFruit NEOPIXEL goggles example: Gamma correction improves appearance of midrange colors
 const uint8_t gamma[] = {
@@ -73,6 +68,7 @@ const uint8_t gamma[] = {
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel markers = Adafruit_NeoPixel(3, MARKPIN, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel ring = Adafruit_NeoPixel(10, 17, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(N_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 // Set to false to display time in 12 hour format, or true to use 24 hour:
 #define TIME_24_HOUR      false
@@ -90,29 +86,24 @@ Adafruit_NeoPixel ring = Adafruit_NeoPixel(10, 17, NEO_GRB + NEO_KHZ800);
 Adafruit_GPS gps(&Serial1);      //hardware serial
 
 //uint32_t milli_color   = pixels.Color ( 120, 70, 200); //pale purple millisecond pulse
-uint32_t milli_color   = pixels.Color ( 250, 0, 0); 
-uint32_t hour_color    = pixels.Color ( 200, 200, 200);
-uint32_t minutes_color = pixels.Color ( 80, 0, 70);
-uint32_t second_color  = pixels.Color ( 0, 90, 60);
-uint32_t marker_color  = pixels.Color ( 30, 30, 30);
-uint32_t ring_color    = pixels.Color ( 10, 10, 10);
+uint32_t milli_color   = pixels.Color ( 120, 120, 150); 
+uint32_t hour_color    = pixels.Color ( 100, 100, 120);
+uint32_t minutes_color = pixels.Color ( 70, 70, 100);
+uint32_t second_color  = pixels.Color ( 30, 30, 50);
+uint32_t marker_color  = pixels.Color ( 70, 70, 100);
+uint32_t ring_color    = pixels.Color ( 10, 10, 15);
+uint32_t strip_color   = pixels.Color ( 0, 0, 0);
+uint32_t cylon_color   = pixels.Color ( 10, 10, 25);
+
 uint32_t off_color     = pixels.Color ( 0, 0, 0);
 
-bool hashadlock= true;
+bool hashadlock= false;
 
 // A small helper
 void error(const __FlashStringHelper*err) {
   Serial.println(err);
   while (1);
 }
-
-// function prototypes over in packetparser.cpp
-uint8_t readPacket(Adafruit_BLE *ble, uint16_t timeout);
-float parsefloat(uint8_t *buffer);
-void printHex(const uint8_t * data, const uint32_t numBytes);
-
-// the packet buffer
-extern uint8_t packetbuffer[];
 
 void setup() {
   delay(500);
@@ -135,9 +126,10 @@ void setup() {
   pixels.begin();
   markers.begin();
   ring.begin();
-  
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
+
+  
   CircuitPlayground.playTone(320, TONE_DURATION_MS);
   delay(100);
   CircuitPlayground.playTone(494, TONE_DURATION_MS);
@@ -145,6 +137,8 @@ void setup() {
   CircuitPlayground.playTone(320, TONE_DURATION_MS);
   delay(100);
   CircuitPlayground.playTone(494, TONE_DURATION_MS);
+  
+  
 }
 
 void loop() {
@@ -180,7 +174,8 @@ void loop() {
         drawclock(); //shows the clock, as long as GPS is locked, else cylon
     }
     else {
-      
+      drawclock();
+      cylon();
     }
     gammacorrect(); //correct brightness
 
@@ -189,71 +184,7 @@ void loop() {
     pixels.show();
     markers.show();
     ring.show();
-  }
-  unsigned long startMillis= millis();  // Start of sample window
-  float peakToPeak = 0;   // peak-to-peak level
- 
-  unsigned int signalMax = 0;
-  unsigned int signalMin = 1023;
-  unsigned int c, y;
-
-  // collect data for length of sample window (in mS)
-  while (millis() - startMillis < SAMPLE_WINDOW)
-  {
-    sample = analogRead(MIC_PIN);
-    if (sample < 1024)  // toss out spurious readings
-    {
-      if (sample > signalMax)
-      {
-        signalMax = sample;  // save just the max levels
-      }
-      else if (sample < signalMin)
-      {
-        signalMin = sample;  // save just the min levels
-      }
-    }
-  }
-  peakToPeak = signalMax - signalMin;  // max - min = peak-peak amplitude
- 
-  // Serial.println(peakToPeak);
- 
- 
-  //Fill the strip with rainbow gradient
-  for (int i=0;i<=strip.numPixels()-1;i++){
-    strip.setPixelColor(i,Wheel(map(i,0,strip.numPixels()-1,30,150)));
-  }
- 
- 
-  //Scale the input logarithmically instead of linearly
-  c = fscale(INPUT_FLOOR, INPUT_CEILING, strip.numPixels(), 0, peakToPeak, 2);
- 
-  
- 
- 
-  if(c < peak) {
-    peak = c;        // Keep dot on top
-    dotHangCount = 0;    // make the dot hang before falling
-  }
-  if (c <= strip.numPixels()) { // Fill partial column with off pixels
-    drawLine(strip.numPixels(), strip.numPixels()-c, strip.Color(0, 0, 0));
-  }
- 
-  // Set the peak dot to match the rainbow gradient
-  y = strip.numPixels() - peak;
-  
-  strip.setPixelColor(y-1,Wheel(map(y,0,strip.numPixels()-1,30,150)));
- 
-  strip.show();
- 
-  // Frame based peak dot animation
-  if(dotHangCount > PEAK_HANG) { //Peak pause length
-    if(++dotCount >= PEAK_FALL) { //Fall rate 
-      peak++;
-      dotCount = 0;
-    }
-  } 
-  else {
-    dotHangCount++; 
+    strip.show();
   }
 }
 
@@ -275,18 +206,79 @@ void enableGPSInterrupt() {
 void clearstrand(){
   //Sets all neopixels blank
   for(int i=0; i<NUMPIXELS; i++){
-    pixels.setPixelColor(i, 0, 0, (random(0,50)));
+    pixels.setPixelColor(i, off_color);
     markers.setPixelColor(i, marker_color);
     ring.setPixelColor(i, ring_color);
+    strip.setPixelColor(i, strip_color);
   }
 }
 
 void clearstrand2(){
-  //sparkling random colours instead of blank pixels
+  //Sets all neopixels blank
   for(int i=0; i<NUMPIXELS; i++){
-    pixels.setPixelColor(i, 50, 20, (random(40,70)));
-    markers.setPixelColor(i, marker_color);
-    markers.setPixelColor(i, ring_color);
+    pixels.setPixelColor(i, off_color);
+    markers.setPixelColor(i, off_color);
+    ring.setPixelColor(i, off_color);
+    strip.setPixelColor(i, off_color);
+  }
+}
+
+void cylon(){
+  static int i=0; //first cylon led
+  static int o=1; //second cylon led, change value for starting distance.
+  static int p=2; //second cylon led, change value for starting distance.
+  int j=0;
+  int k=0;
+  int l=0;
+
+  clearstrand2();
+  if (i>=9){
+    j=17-i;
+  }else{
+    j=i;
+  }
+  if (o>=9){
+    k=17-o;
+  }else{
+    k=o;
+  }
+  if (p>=9){
+    l=17-p;
+  }else{
+    l=p;
+  }
+  strip.setPixelColor(j, cylon_color);
+  strip.setPixelColor(k, cylon_color);
+  strip.setPixelColor(l, cylon_color);
+  //pixels.setPixelColor(j, pixels.Color(random(0,255),random(0,255),random(0,255)));    //randomises colour every time it moves to the next pixel
+  //pixels.setPixelColor(j, pixels.Color(random(100,200),0,random(200,255)));    //random shades of blue, pink, and purple
+  i++;
+  if (i==18){
+    i=0;
+  }
+  o++;
+  if (o==18){
+    o=0;
+  }
+  p++;
+  if (p==18){
+    p=0;
+  }
+
+  //every second, a pulse crosses the whole strip end to end  
+  static int z=0;
+  static int x=0;
+  int minutes = gps.minute;
+  int seconds = gps.seconds;
+  if (z!=10){
+    ring.setPixelColor(z, 10, 0, 0); //pulse colour    
+    z++;
+  }
+  if (x!=seconds){
+    CircuitPlayground.playTone(320, TONE_DURATION_MS);
+    z=0;
+    x=seconds;
+    
   }
 }
 
@@ -390,103 +382,5 @@ void gammacorrect(){
     b = gamma[b];
     pixels.setPixelColor (i, pixels.Color(r,g,b)); //jam it back in
   
-  }
-}
-
-//////////////////////////////////////////
-
-//Used to draw a line between two points of a given color
-void drawLine(uint8_t from, uint8_t to, uint32_t c) {
-  uint8_t fromTemp;
-  if (from > to) {
-    fromTemp = from;
-    from = to;
-    to = fromTemp;
-  }
-  for(int i=from; i<=to; i++){
-    strip.setPixelColor(i, c);
-  }
-}
- 
- 
-float fscale( float originalMin, float originalMax, float newBegin, float
-newEnd, float inputValue, float curve){
- 
-  float OriginalRange = 0;
-  float NewRange = 0;
-  float zeroRefCurVal = 0;
-  float normalizedCurVal = 0;
-  float rangedValue = 0;
-  boolean invFlag = 0;
- 
- 
-  // condition curve parameter
-  // limit range
- 
-  if (curve > 10) curve = 10;
-  if (curve < -10) curve = -10;
- 
-  curve = (curve * -.1) ; // - invert and scale - this seems more intuitive - postive numbers give more weight to high end on output 
-  curve = pow(10, curve); // convert linear scale into lograthimic exponent for other pow function
- 
-  /*
-   Serial.println(curve * 100, DEC);   // multply by 100 to preserve resolution  
-   Serial.println(); 
-   */
- 
-  // Check for out of range inputValues
-  if (inputValue < originalMin) {
-    inputValue = originalMin;
-  }
-  if (inputValue > originalMax) {
-    inputValue = originalMax;
-  }
- 
-  // Zero Refference the values
-  OriginalRange = originalMax - originalMin;
- 
-  if (newEnd > newBegin){ 
-    NewRange = newEnd - newBegin;
-  }
-  else
-  {
-    NewRange = newBegin - newEnd; 
-    invFlag = 1;
-  }
- 
-  zeroRefCurVal = inputValue - originalMin;
-  normalizedCurVal  =  zeroRefCurVal / OriginalRange;   // normalize to 0 - 1 float
- 
-  // Check for originalMin > originalMax  - the math for all other cases i.e. negative numbers seems to work out fine 
-  if (originalMin > originalMax ) {
-    return 0;
-  }
- 
-  if (invFlag == 0){
-    rangedValue =  (pow(normalizedCurVal, curve) * NewRange) + newBegin;
- 
-  }
-  else     // invert the ranges
-  {   
-    rangedValue =  newBegin - (pow(normalizedCurVal, curve) * NewRange); 
-  }
- 
-  return rangedValue;
-}
- 
- 
-// Input a value 0 to 255 to get a color value.
-// The colours are a transition r - g - b - back to r.
-uint32_t Wheel(byte WheelPos) {
-  if(WheelPos < 85) {
-    return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
-  } 
-  else if(WheelPos < 170) {
-    WheelPos -= 85;
-    return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
-  } 
-  else {
-    WheelPos -= 170;
-    return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
   }
 }
