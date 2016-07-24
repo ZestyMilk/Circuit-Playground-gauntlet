@@ -86,18 +86,18 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(N_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ
 Adafruit_GPS gps(&Serial1);      //hardware serial
 
 //uint32_t milli_color   = pixels.Color ( 120, 70, 200); //pale purple millisecond pulse
-uint32_t milli_color   = pixels.Color ( 120, 120, 150); 
+uint32_t milli_color   = pixels.Color ( 80, 80, 200); 
 uint32_t hour_color    = pixels.Color ( 100, 100, 120);
 uint32_t minutes_color = pixels.Color ( 70, 70, 100);
 uint32_t second_color  = pixels.Color ( 30, 30, 50);
-uint32_t marker_color  = pixels.Color ( 70, 70, 100);
-uint32_t ring_color    = pixels.Color ( 10, 10, 15);
+uint32_t marker_color  = pixels.Color ( 10, 10, 20);
+uint32_t ring_color    = pixels.Color ( 1, 1, 2);
 uint32_t strip_color   = pixels.Color ( 0, 0, 0);
 uint32_t cylon_color   = pixels.Color ( 10, 10, 25);
 
 uint32_t off_color     = pixels.Color ( 0, 0, 0);
 
-bool hashadlock= false;
+bool hashadlock= true;
 
 // A small helper
 void error(const __FlashStringHelper*err) {
@@ -129,7 +129,7 @@ void setup() {
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
 
-  
+  /*
   CircuitPlayground.playTone(320, TONE_DURATION_MS);
   delay(100);
   CircuitPlayground.playTone(494, TONE_DURATION_MS);
@@ -137,8 +137,7 @@ void setup() {
   CircuitPlayground.playTone(320, TONE_DURATION_MS);
   delay(100);
   CircuitPlayground.playTone(494, TONE_DURATION_MS);
-  
-  
+  */
 }
 
 void loop() {
@@ -160,13 +159,7 @@ void loop() {
     }
   }
 
-  //Display code
-  static unsigned long previousMillis = 0;
-  unsigned long currentMillis = millis();
-  const long interval = 20;       //change the speed of the cylon here
-  if (currentMillis - previousMillis >= interval) {
-    //previousMillis = currentMillis;
-    previousMillis += interval;
+  
 
     //if (gps.fixquality !=0){
     //if (gps.fix){
@@ -175,7 +168,6 @@ void loop() {
     }
     else {
       drawclock();
-      cylon();
     }
     gammacorrect(); //correct brightness
 
@@ -185,7 +177,7 @@ void loop() {
     markers.show();
     ring.show();
     strip.show();
-  }
+  
 }
 
 SIGNAL(TIMER0_COMPA_vect) {
@@ -275,7 +267,7 @@ void cylon(){
     z++;
   }
   if (x!=seconds){
-    CircuitPlayground.playTone(320, TONE_DURATION_MS);
+    //CircuitPlayground.playTone(320, TONE_DURATION_MS);
     z=0;
     x=seconds;
     
@@ -321,19 +313,23 @@ void drawclock(){
   add_color(secondsled, second_color);
 
   
-
-  //every second, a pulse crosses the whole strip end to end  
-  static int o=0;
-  static int d=0;
-  if (o!=10){
-    ring.setPixelColor(o, milli_color); //pulse colour    
-    o++;
+  static unsigned long previousMillis = 0;
+  unsigned long currentMillis = millis();
+  const long interval = 20;
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis += interval; 
+    static int o=0;
+    static int d=0;
+    if (o!=10){
+      ring.setPixelColor(o, milli_color); //pulse colour    
+      o++;
+    }
+    if (d!=seconds){
+      o=0;
+      d=seconds;
+    }
   }
-  if (d!=seconds){
-    o=0;
-    d=seconds;
-    
-  }  
+   datashow();
 }
 
 //copied from NeoPixel ring clock face by Kevin ALford and modified by Becky Stern for Adafruit Industries
@@ -384,3 +380,35 @@ void gammacorrect(){
   
   }
 }
+
+void datashow(){
+  static unsigned long previousMillis = 0;
+  unsigned long currentMillis = millis();
+  const long interval = 20;
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis += interval;
+
+  strip.setPixelColor(0, 1, 1, 5);
+  strip.setPixelColor(1, 5, 5, 15);
+  strip.setPixelColor(2, 10, 10, 20);
+  strip.setPixelColor(3, 0, 0, 5);
+  strip.setPixelColor(4, 0, 0, 20);
+  strip.setPixelColor(5, 0, 0, 5);
+  strip.setPixelColor(6, 10, 10, 20);
+  strip.setPixelColor(7, 5, 5, 15);
+  strip.setPixelColor(8, 1, 1, 5);
+  strip.show();
+ 
+  strip.setPixelColor(0, 0, 0, 0);
+  strip.setPixelColor(1, 0, 0, 0);
+  strip.setPixelColor(2, 0, 0, 0);
+  strip.setPixelColor(3, 0, 0, 5);
+  strip.setPixelColor(4, 40, 40, 180);
+  strip.setPixelColor(5, 0, 0, 5);
+  strip.setPixelColor(6, 0, 0, 0);
+  strip.setPixelColor(7, 0, 0, 0);
+  strip.setPixelColor(8, 0, 0, 0);
+  strip.show();
+  }
+}
+
