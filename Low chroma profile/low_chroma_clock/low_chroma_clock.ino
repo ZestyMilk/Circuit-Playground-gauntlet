@@ -17,8 +17,8 @@
 #define PIN            9
 
 //Neopixels on the Circuit Playground
-#define N_PIXELS  9  // Number of pixels in strand
-#define LED_PIN    12  // NeoPixel LED strand is connected to this pin
+#define N_PIXELS       9  // Number of pixels in strand
+#define LED_PIN        12  // NeoPixel LED strand is connected to this pin
 
 // Marker Neopixels
 #define MARKPIN        6
@@ -27,6 +27,21 @@
 #define ANALOG_INPUT  A5
 #define VALUE_MIN     0
 #define VALUE_MAX     5
+
+/////////////////////////////////
+#define MIC_PIN        A4
+#define SAMPLE_WINDOW   10  // Sample window for average level
+#define PEAK_HANG 24 //Time of pause before peak dot falls
+#define PEAK_FALL 4 //Rate of falling peak dot
+#define INPUT_FLOOR 10 //Lower range of analogRead input
+#define INPUT_CEILING 300 //Max range of analogRead input, the lower the value the more sensitive (1023 = max)
+
+byte peak = 16;      // Peak level of column; used for falling dots
+unsigned int sample;
+byte dotCount = 0;  //Frame counter for peak dot
+byte dotHangCount = 0; //Frame counter for holding peak dot
+////////////////////////////////
+
 
 #define BUTTONL       4
 #define BUTTONR       19
@@ -162,7 +177,7 @@ void loop() {
       drawclock();
     }
     gammacorrect(); //correct brightness
-
+    vumeter();
     
 
     //if we're not inhibited, refresh the display
@@ -314,7 +329,7 @@ void drawclock(){
     static int o=0;
     static int d=0;
     if (o!=10){
-      ring.setPixelColor(o, light*10, light*10, light*20); //pulse colour    
+      ring_color(o, light*10, light*10, light*20); //pulse colour    
       o++;
     }
     if (d!=seconds){
@@ -322,7 +337,8 @@ void drawclock(){
       d=seconds;
     }
   }
-   datashow();
+  datashow();
+   
 }
 
 //copied from NeoPixel ring clock face by Kevin ALford and modified by Becky Stern for Adafruit Industries
@@ -338,6 +354,20 @@ void add_color (uint8_t position, uint32_t color)
   b = (uint8_t)(blended_color >>  0);
  
   pixels.setPixelColor (position, blended_color);
+}
+
+void ring_color (uint8_t position2, uint32_t color)
+{
+  uint32_t blended_color2 = blend (ring.getPixelColor (position2), color);
+ 
+  /* Gamma mapping */
+  uint8_t r,b,g;
+ 
+  r = (uint8_t)(blended_color2 >> 16),
+  g = (uint8_t)(blended_color2 >>  8),
+  b = (uint8_t)(blended_color2 >>  0);
+ 
+  ring.setPixelColor (position2, blended_color);
 }
  
  
@@ -375,6 +405,7 @@ void gammacorrect(){
 }
 
 void datashow(){
+
   // Light sensor values
   uint16_t light = analogRead(ANALOG_INPUT);
   light = ((light/5)+1);
@@ -409,9 +440,7 @@ void datashow(){
       
     if (currentMillis - previousMillis2 >= interval2) {
     previousMillis2 += interval2;
-    strip.setPixelColor(3, 0, 0, 0);
     strip.setPixelColor(4, 15, 15, 30);
-    strip.setPixelColor(5, 0, 0, 0);
     }
     
     if (currentMillis - previousMillis >= interval) {
@@ -420,6 +449,8 @@ void datashow(){
       strip.setPixelColor(0, u*light, u*light, (u*light)*2);
       strip.setPixelColor(1, i*light, i*light, (i*light)*2);
       strip.setPixelColor(2, o*light, o*light, (o*light)*2);
+      strip.setPixelColor(3, p*light, p*light, (p*light)*2);
+      strip.setPixelColor(5, p*light, p*light, (p*light)*2);
       strip.setPixelColor(6, o*light, o*light, (o*light)*2);
       strip.setPixelColor(7, i*light, i*light, (i*light)*2);
       strip.setPixelColor(8, u*light, u*light, (u*light)*2);
@@ -437,4 +468,153 @@ void datashow(){
   //strip.show();
   }
 }
+
+void vumeter(){
+  unsigned long startMillis= millis();  // Start of sample window
+  float peakToPeak = 0;   // peak-to-peak level
+ 
+  unsigned int signalMax = 0;
+  unsigned int signalMin = 1023;
+  unsigned int c, y;
+ 
+ 
+  // collect data for length of sample window (in mS)
+  while (millis() - startMillis < SAMPLE_WINDOW)
+  {
+    sample = analogRead(MIC_PIN);
+    if (sample < 1024)  // toss out spurious readings
+    {
+      if (sample > signalMax)
+      {
+        signalMax = sample;  // save just the max levels
+      }
+      else if (sample < signalMin)
+      {
+        signalMin = sample;  // save just the min levels
+      }
+    }
+  }
+  peakToPeak = signalMax - signalMin;  // max - min = peak-peak amplitude
+ 
+  // Serial.println(peakToPeak);
+ 
+ 
+  //Fill the ring with rainbow gradient
+  for (int i=0;i<=ring.numPixels()-1;i++){
+    ring_color(i, 10, 0, 0);
+  }
+ 
+ 
+  //Scale the input logarithmically instead of linearly
+  c = fscale(INPUT_FLOOR, INPUT_CEILING, ring.numPixels(), 0, peakToPeak, 2);
+ 
+  
+ 
+ 
+  if(c < peak) {
+    peak = c;        // Keep dot on top
+    dotHangCount = 0;    // make the dot hang before falling
+  }
+  if (c <= ring.numPixels()) { // Fill partial column with off pixels
+    drawLine(ring.numPixels(), ring.numPixels()-c, ring.Color(0, 0, 0));
+  }
+ 
+  // Set the peak dot to match the rainbow gradient
+  y = ring.numPixels() - peak;
+  
+  ring_color(y-1,0, 0, 0);
+ 
+  ring.show();
+ 
+  // Frame based peak dot animation
+  if(dotHangCount > PEAK_HANG) { //Peak pause length
+    if(++dotCount >= PEAK_FALL) { //Fall rate 
+      peak++;
+      dotCount = 0;
+    }
+  } 
+  else {
+    dotHangCount++; 
+  }
+}
+ 
+//Used to draw a line between two points of a given color
+void drawLine(uint8_t from, uint8_t to, uint32_t c) {
+  uint8_t fromTemp;
+  if (from > to) {
+    fromTemp = from;
+    from = to;
+    to = fromTemp;
+  }
+  for(int i=from; i<=to; i++){
+    ring_color(i, c);
+  }
+}
+ 
+ 
+float fscale( float originalMin, float originalMax, float newBegin, float
+newEnd, float inputValue, float curve){
+ 
+  float OriginalRange = 0;
+  float NewRange = 0;
+  float zeroRefCurVal = 0;
+  float normalizedCurVal = 0;
+  float rangedValue = 0;
+  boolean invFlag = 0;
+ 
+ 
+  // condition curve parameter
+  // limit range
+ 
+  if (curve > 10) curve = 10;
+  if (curve < -10) curve = -10;
+ 
+  curve = (curve * -.1) ; // - invert and scale - this seems more intuitive - postive numbers give more weight to high end on output 
+  curve = pow(10, curve); // convert linear scale into lograthimic exponent for other pow function
+ 
+  /*
+   Serial.println(curve * 100, DEC);   // multply by 100 to preserve resolution  
+   Serial.println(); 
+   */
+ 
+  // Check for out of range inputValues
+  if (inputValue < originalMin) {
+    inputValue = originalMin;
+  }
+  if (inputValue > originalMax) {
+    inputValue = originalMax;
+  }
+ 
+  // Zero Refference the values
+  OriginalRange = originalMax - originalMin;
+ 
+  if (newEnd > newBegin){ 
+    NewRange = newEnd - newBegin;
+  }
+  else
+  {
+    NewRange = newBegin - newEnd; 
+    invFlag = 1;
+  }
+ 
+  zeroRefCurVal = inputValue - originalMin;
+  normalizedCurVal  =  zeroRefCurVal / OriginalRange;   // normalize to 0 - 1 float
+ 
+  // Check for originalMin > originalMax  - the math for all other cases i.e. negative numbers seems to work out fine 
+  if (originalMin > originalMax ) {
+    return 0;
+  }
+ 
+  if (invFlag == 0){
+    rangedValue =  (pow(normalizedCurVal, curve) * NewRange) + newBegin;
+ 
+  }
+  else     // invert the ranges
+  {   
+    rangedValue =  newBegin - (pow(normalizedCurVal, curve) * NewRange); 
+  }
+ 
+  return rangedValue;
+}
+
 
