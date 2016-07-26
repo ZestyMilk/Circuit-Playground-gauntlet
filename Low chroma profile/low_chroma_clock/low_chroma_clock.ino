@@ -1,5 +1,6 @@
 //GPS Clock by Tully Jagoe
 
+#include "Adafruit_CircuitPlayground.h"
 #include <SoftwareSerial.h>
 #include "Adafruit_GPS.h"
 #include <Adafruit_NeoPixel.h>
@@ -11,36 +12,28 @@
 #include <math.h>
 #endif
 
-#include "Adafruit_CircuitPlayground.h"
-
-
-// Which pin on the Arduino is connected to the NeoPixels?
+//Neopixels on the clock face
+#define NUMPIXELS      16
 #define PIN            9
+
+//Neopixels on the Circuit Playground
+#define N_PIXELS  9  // Number of pixels in strand
+#define LED_PIN    12  // NeoPixel LED strand is connected to this pin
+
+// Marker Neopixels
 #define MARKPIN        6
 
-// How many NeoPixels are attached to the Arduino?
-#define NUMPIXELS      16
+// Light sensor definitions
+#define ANALOG_INPUT  A5
+#define VALUE_MIN     0
+#define VALUE_MAX     5
 
-#define N_PIXELS  9  // Number of pixels in strand
-#define MIC_PIN   A4  // Microphone is attached to this analog pin
-#define LED_PIN    12  // NeoPixel LED strand is connected to this pin
-#define SAMPLE_WINDOW   10  // Sample window for average level
-#define PEAK_HANG 24 //Time of pause before peak dot falls
-#define PEAK_FALL 4 //Rate of falling peak dot
-#define INPUT_FLOOR 10 //Lower range of analogRead input
-#define INPUT_CEILING 300 //Max range of analogRead input, the lower the value the more sensitive (1023 = max)
+#define BUTTONL       4
+#define BUTTONR       19
+#define BUTTONS       21
 
-#define TONE_DURATION_MS 50
- 
- 
- 
-byte peak = 16;      // Peak level of column; used for falling dots
-unsigned int sample;
- 
-byte dotCount = 0;  //Frame counter for peak dot
-byte dotHangCount = 0; //Frame counter for holding peak dot
- 
-
+//Speaker sound duration
+#define TONE_DURATION_MS 50 
 
 // From adaFruit NEOPIXEL goggles example: Gamma correction improves appearance of midrange colors
 const uint8_t gamma[] = {
@@ -62,6 +55,8 @@ const uint8_t gamma[] = {
     218,220,223,225,227,230,232,235,237,240,242,245,247,250,252,255
 };
 
+uint16_t light = analogRead(ANALOG_INPUT);
+
 // When we setup the NeoPixel library, we tell it how many pixels, and which pin to use to send signals.
 // Note that for older NeoPixel strips you might need to change the third parameter--see the strandtest
 // example for more information on possible values.
@@ -76,16 +71,13 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(N_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ
 // Offset the hours from UTC (universal time) to your local time by changing
 // this value.  The GPS time will be in UTC so lookup the offset for your
 // local time from a site like:
-//   https://en.wikipedia.org/wiki/List_of_UTC_time_offsets
+// https://en.wikipedia.org/wiki/List_of_UTC_time_offsets
 // This value, -7, will set the time to UTC-7 or Pacific Standard Time during
 // daylight savings time.
 #define HOUR_OFFSET       +10
 
-//SoftwareSerial gpsSerial(4, 3);  // software serial connection with RX = pin 4 and TX = pin 3.
-
 Adafruit_GPS gps(&Serial1);      //hardware serial
 
-//uint32_t milli_color   = pixels.Color ( 120, 70, 200); //pale purple millisecond pulse
 uint32_t milli_color   = pixels.Color ( 80, 80, 200); 
 uint32_t hour_color    = pixels.Color ( 100, 100, 120);
 uint32_t minutes_color = pixels.Color ( 70, 70, 100);
@@ -171,6 +163,8 @@ void loop() {
     }
     gammacorrect(); //correct brightness
 
+    
+
     //if we're not inhibited, refresh the display
     //if(dispInhibit == false) pixels.show(); // This sends the updated pixel color to the hardware.
     pixels.show();
@@ -196,25 +190,19 @@ void enableGPSInterrupt() {
 }
 
 void clearstrand(){
+  uint16_t light = analogRead(ANALOG_INPUT);
+  light = ((light/15)+1);
+  
   //Sets all neopixels blank
   for(int i=0; i<NUMPIXELS; i++){
     pixels.setPixelColor(i, off_color);
-    markers.setPixelColor(i, marker_color);
-    ring.setPixelColor(i, ring_color);
+    markers.setPixelColor(i, light*4, light*4, light*8);
+    ring.setPixelColor(i, light/5, light/5, light/3);
     strip.setPixelColor(i, strip_color);
   }
 }
 
-void clearstrand2(){
-  //Sets all neopixels blank
-  for(int i=0; i<NUMPIXELS; i++){
-    pixels.setPixelColor(i, off_color);
-    markers.setPixelColor(i, off_color);
-    ring.setPixelColor(i, off_color);
-    strip.setPixelColor(i, off_color);
-  }
-}
-
+/*
 void cylon(){
   static int i=0; //first cylon led
   static int o=1; //second cylon led, change value for starting distance.
@@ -273,8 +261,13 @@ void cylon(){
     
   }
 }
+*/
 
 void drawclock(){
+
+  uint16_t light = analogRead(ANALOG_INPUT);
+  light = ((light/15)+1);
+  
   // Grab the current hours, minutes, seconds from the GPS.
   // This will only be set once the GPS has a fix!  Make sure to add
   // a coin cell battery so the GPS will save the time between power-up/down.
@@ -321,7 +314,7 @@ void drawclock(){
     static int o=0;
     static int d=0;
     if (o!=10){
-      ring.setPixelColor(o, milli_color); //pulse colour    
+      ring.setPixelColor(o, light*10, light*10, light*20); //pulse colour    
       o++;
     }
     if (d!=seconds){
@@ -382,33 +375,66 @@ void gammacorrect(){
 }
 
 void datashow(){
-  static unsigned long previousMillis = 1000;
-  unsigned long currentMillis = millis();
-  const long interval = 0;
-  if (currentMillis - previousMillis >= interval) {
-    previousMillis += interval;
+  // Light sensor values
+  uint16_t light = analogRead(ANALOG_INPUT);
+  light = ((light/5)+1);
 
-  strip.setPixelColor(0, 10, 10, 20);
-  strip.setPixelColor(1, 10, 10, 20);
-  strip.setPixelColor(2, 10, 10, 20);
-  strip.setPixelColor(3, 0, 0, 15);
-  strip.setPixelColor(4, 0, 0, 20);
-  strip.setPixelColor(5, 0, 0, 15);
-  strip.setPixelColor(6, 10, 10, 20);
-  strip.setPixelColor(7, 10, 10, 20);
-  strip.setPixelColor(8, 10, 10, 20);
-  strip.show();
- 
-  strip.setPixelColor(0, 0, 0, 0);
-  strip.setPixelColor(1, 0, 0, 0);
-  strip.setPixelColor(2, 0, 0, 0);
-  strip.setPixelColor(3, 0, 0, 15);
-  strip.setPixelColor(4, 40, 40, 180);
-  strip.setPixelColor(5, 0, 0, 15);
-  strip.setPixelColor(6, 0, 0, 0);
-  strip.setPixelColor(7, 0, 0, 0);
-  strip.setPixelColor(8, 0, 0, 0);
-  strip.show();
+  //Button values
+  uint16_t buttonL = digitalRead(BUTTONL);
+  uint16_t buttonR = digitalRead(BUTTONR);
+  uint16_t buttonS = digitalRead(BUTTONS);
+  uint16_t buttonstate = 1;
+  
+  static unsigned long previousMillis = 0;
+  static unsigned long previousMillis2 = 0;
+  unsigned long currentMillis = millis();
+  const long interval = 100;
+  const long interval2 = 0;
+  int u=(random(0,3));
+  int i=(random(0,3));
+  int o=(random(0,3));
+  int p=(random(0,3));
+  
+  if (buttonS == HIGH){
+        strip.setPixelColor(0, 255, 255, 255);
+        strip.setPixelColor(1, 255, 255, 255);
+        strip.setPixelColor(2, 255, 255, 255);
+        strip.setPixelColor(3, 255, 255, 255);
+        strip.setPixelColor(4, 255, 255, 255);
+        strip.setPixelColor(5, 255, 255, 255);
+        strip.setPixelColor(6, 255, 255, 255);
+        strip.setPixelColor(7, 255, 255, 255);
+        strip.setPixelColor(8, 255, 255, 255);
+      }else{
+      
+    if (currentMillis - previousMillis2 >= interval2) {
+    previousMillis2 += interval2;
+    strip.setPixelColor(3, 0, 0, 0);
+    strip.setPixelColor(4, 15, 15, 30);
+    strip.setPixelColor(5, 0, 0, 0);
+    }
+    
+    if (currentMillis - previousMillis >= interval) {
+      previousMillis += interval;
+  
+      strip.setPixelColor(0, u*light, u*light, (u*light)*2);
+      strip.setPixelColor(1, i*light, i*light, (i*light)*2);
+      strip.setPixelColor(2, o*light, o*light, (o*light)*2);
+      strip.setPixelColor(6, o*light, o*light, (o*light)*2);
+      strip.setPixelColor(7, i*light, i*light, (i*light)*2);
+      strip.setPixelColor(8, u*light, u*light, (u*light)*2);
+    }
+  if (buttonL == HIGH){
+        strip.setPixelColor(3, 0, 0, 10);
+        strip.setPixelColor(5, 0, 0, 0);
+        buttonstate == 3;
+      }
+  if (buttonR == HIGH){
+        strip.setPixelColor(3, 0, 0, 0);
+        strip.setPixelColor(5, 0, 0, 10);
+        buttonstate == 1;
+      }
+  //strip.show();
   }
 }
 
