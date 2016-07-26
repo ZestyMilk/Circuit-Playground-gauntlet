@@ -382,29 +382,29 @@ void gammacorrect(){
 }
 
 void datashow(){
-  static unsigned long previousMillis = 0;
+  static unsigned long previousMillis = 1000;
   unsigned long currentMillis = millis();
-  const long interval = 20;
+  const long interval = 0;
   if (currentMillis - previousMillis >= interval) {
     previousMillis += interval;
 
-  strip.setPixelColor(0, 1, 1, 5);
-  strip.setPixelColor(1, 5, 5, 15);
+  strip.setPixelColor(0, 10, 10, 20);
+  strip.setPixelColor(1, 10, 10, 20);
   strip.setPixelColor(2, 10, 10, 20);
-  strip.setPixelColor(3, 0, 0, 5);
+  strip.setPixelColor(3, 0, 0, 15);
   strip.setPixelColor(4, 0, 0, 20);
-  strip.setPixelColor(5, 0, 0, 5);
+  strip.setPixelColor(5, 0, 0, 15);
   strip.setPixelColor(6, 10, 10, 20);
-  strip.setPixelColor(7, 5, 5, 15);
-  strip.setPixelColor(8, 1, 1, 5);
+  strip.setPixelColor(7, 10, 10, 20);
+  strip.setPixelColor(8, 10, 10, 20);
   strip.show();
  
   strip.setPixelColor(0, 0, 0, 0);
   strip.setPixelColor(1, 0, 0, 0);
   strip.setPixelColor(2, 0, 0, 0);
-  strip.setPixelColor(3, 0, 0, 5);
+  strip.setPixelColor(3, 0, 0, 15);
   strip.setPixelColor(4, 40, 40, 180);
-  strip.setPixelColor(5, 0, 0, 5);
+  strip.setPixelColor(5, 0, 0, 15);
   strip.setPixelColor(6, 0, 0, 0);
   strip.setPixelColor(7, 0, 0, 0);
   strip.setPixelColor(8, 0, 0, 0);
