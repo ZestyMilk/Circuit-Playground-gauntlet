@@ -99,6 +99,7 @@ uint32_t minutes_color = pixels.Color ( 70, 70, 100);
 uint32_t second_color  = pixels.Color ( 30, 30, 50);
 uint32_t marker_color  = pixels.Color ( 10, 10, 20);
 uint32_t ring_color    = pixels.Color ( 1, 1, 2);
+uint32_t vu_color      = pixels.Color ( 10, 0, 0);
 uint32_t strip_color   = pixels.Color ( 0, 0, 0);
 uint32_t cylon_color   = pixels.Color ( 10, 10, 25);
 
@@ -177,7 +178,7 @@ void loop() {
       drawclock();
     }
     gammacorrect(); //correct brightness
-    vumeter();
+    //vumeter();
     
 
     //if we're not inhibited, refresh the display
@@ -207,6 +208,9 @@ void enableGPSInterrupt() {
 void clearstrand(){
   uint16_t light = analogRead(ANALOG_INPUT);
   light = ((light/15)+1);
+  if (light > 100){
+    light = 100;
+  }
   
   //Sets all neopixels blank
   for(int i=0; i<NUMPIXELS; i++){
@@ -217,71 +221,13 @@ void clearstrand(){
   }
 }
 
-/*
-void cylon(){
-  static int i=0; //first cylon led
-  static int o=1; //second cylon led, change value for starting distance.
-  static int p=2; //second cylon led, change value for starting distance.
-  int j=0;
-  int k=0;
-  int l=0;
-
-  clearstrand2();
-  if (i>=9){
-    j=17-i;
-  }else{
-    j=i;
-  }
-  if (o>=9){
-    k=17-o;
-  }else{
-    k=o;
-  }
-  if (p>=9){
-    l=17-p;
-  }else{
-    l=p;
-  }
-  strip.setPixelColor(j, cylon_color);
-  strip.setPixelColor(k, cylon_color);
-  strip.setPixelColor(l, cylon_color);
-  //pixels.setPixelColor(j, pixels.Color(random(0,255),random(0,255),random(0,255)));    //randomises colour every time it moves to the next pixel
-  //pixels.setPixelColor(j, pixels.Color(random(100,200),0,random(200,255)));    //random shades of blue, pink, and purple
-  i++;
-  if (i==18){
-    i=0;
-  }
-  o++;
-  if (o==18){
-    o=0;
-  }
-  p++;
-  if (p==18){
-    p=0;
-  }
-
-  //every second, a pulse crosses the whole strip end to end  
-  static int z=0;
-  static int x=0;
-  int minutes = gps.minute;
-  int seconds = gps.seconds;
-  if (z!=10){
-    ring.setPixelColor(z, 10, 0, 0); //pulse colour    
-    z++;
-  }
-  if (x!=seconds){
-    //CircuitPlayground.playTone(320, TONE_DURATION_MS);
-    z=0;
-    x=seconds;
-    
-  }
-}
-*/
-
 void drawclock(){
 
   uint16_t light = analogRead(ANALOG_INPUT);
-  light = ((light/15)+1);
+  light = ((light)+1);
+  if (light > 100){
+    light = 100;
+  }
   
   // Grab the current hours, minutes, seconds from the GPS.
   // This will only be set once the GPS has a fix!  Make sure to add
@@ -329,7 +275,7 @@ void drawclock(){
     static int o=0;
     static int d=0;
     if (o!=10){
-      ring_color(o, light*10, light*10, light*20); //pulse colour    
+      ring.setPixelColor(o, light, light, light); //pulse colour    
       o++;
     }
     if (d!=seconds){
@@ -356,9 +302,10 @@ void add_color (uint8_t position, uint32_t color)
   pixels.setPixelColor (position, blended_color);
 }
 
-void ring_color (uint8_t position2, uint32_t color)
+
+void ringadd_color (uint8_t position, uint32_t color)
 {
-  uint32_t blended_color2 = blend (ring.getPixelColor (position2), color);
+  uint32_t blended_color2 = blend (ring.getPixelColor (position), color);
  
   /* Gamma mapping */
   uint8_t r,b,g;
@@ -367,8 +314,9 @@ void ring_color (uint8_t position2, uint32_t color)
   g = (uint8_t)(blended_color2 >>  8),
   b = (uint8_t)(blended_color2 >>  0);
  
-  ring.setPixelColor (position2, blended_color);
+  ring.setPixelColor (position, blended_color2);
 }
+
  
  
 uint32_t blend (uint32_t color1, uint32_t color2)
@@ -408,7 +356,10 @@ void datashow(){
 
   // Light sensor values
   uint16_t light = analogRead(ANALOG_INPUT);
-  light = ((light/5)+1);
+  light = ((light/10)+1);
+  if (light > 100){
+    light = 100;
+  }
 
   //Button values
   uint16_t buttonL = digitalRead(BUTTONL);
@@ -427,15 +378,15 @@ void datashow(){
   int p=(random(0,3));
   
   if (buttonS == HIGH){
-        strip.setPixelColor(0, 255, 255, 255);
-        strip.setPixelColor(1, 255, 255, 255);
-        strip.setPixelColor(2, 255, 255, 255);
-        strip.setPixelColor(3, 255, 255, 255);
-        strip.setPixelColor(4, 255, 255, 255);
-        strip.setPixelColor(5, 255, 255, 255);
-        strip.setPixelColor(6, 255, 255, 255);
-        strip.setPixelColor(7, 255, 255, 255);
-        strip.setPixelColor(8, 255, 255, 255);
+        strip.setPixelColor(0, 50, 50, 120);
+        strip.setPixelColor(1, 50, 50, 120);
+        strip.setPixelColor(2, 50, 50, 120);
+        strip.setPixelColor(3, 50, 50, 120);
+        strip.setPixelColor(4, 50, 50, 120);
+        strip.setPixelColor(5, 50, 50, 120);
+        strip.setPixelColor(6, 50, 50, 120);
+        strip.setPixelColor(7, 50, 50, 120);
+        strip.setPixelColor(8, 50, 50, 120);
       }else{
       
     if (currentMillis - previousMillis2 >= interval2) {
@@ -456,19 +407,19 @@ void datashow(){
       strip.setPixelColor(8, u*light, u*light, (u*light)*2);
     }
   if (buttonL == HIGH){
-        strip.setPixelColor(3, 0, 0, 10);
+        strip.setPixelColor(3, 0, 0, 100);
         strip.setPixelColor(5, 0, 0, 0);
         buttonstate == 3;
       }
   if (buttonR == HIGH){
         strip.setPixelColor(3, 0, 0, 0);
-        strip.setPixelColor(5, 0, 0, 10);
+        strip.setPixelColor(5, 0, 0, 100);
         buttonstate == 1;
       }
-  //strip.show();
   }
 }
 
+/*
 void vumeter(){
   unsigned long startMillis= millis();  // Start of sample window
   float peakToPeak = 0;   // peak-to-peak level
@@ -501,7 +452,7 @@ void vumeter(){
  
   //Fill the ring with rainbow gradient
   for (int i=0;i<=ring.numPixels()-1;i++){
-    ring_color(i, 10, 0, 0);
+    ringadd_color(i, vu_color);
   }
  
  
@@ -522,7 +473,7 @@ void vumeter(){
   // Set the peak dot to match the rainbow gradient
   y = ring.numPixels() - peak;
   
-  ring_color(y-1,0, 0, 0);
+  ringadd_color(y-1,vu_color);
  
   ring.show();
  
@@ -547,7 +498,7 @@ void drawLine(uint8_t from, uint8_t to, uint32_t c) {
     to = fromTemp;
   }
   for(int i=from; i<=to; i++){
-    ring_color(i, c);
+    ringadd_color(i, c);
   }
 }
  
@@ -572,10 +523,10 @@ newEnd, float inputValue, float curve){
   curve = (curve * -.1) ; // - invert and scale - this seems more intuitive - postive numbers give more weight to high end on output 
   curve = pow(10, curve); // convert linear scale into lograthimic exponent for other pow function
  
-  /*
-   Serial.println(curve * 100, DEC);   // multply by 100 to preserve resolution  
-   Serial.println(); 
-   */
+  
+   //Serial.println(curve * 100, DEC);   // multply by 100 to preserve resolution  
+   //Serial.println(); 
+   
  
   // Check for out of range inputValues
   if (inputValue < originalMin) {
@@ -617,4 +568,4 @@ newEnd, float inputValue, float curve){
   return rangedValue;
 }
 
-
+*/
