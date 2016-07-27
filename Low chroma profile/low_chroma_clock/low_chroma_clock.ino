@@ -193,8 +193,8 @@ void enableGPSInterrupt() {
 void clearstrand(){
   uint16_t light = analogRead(ANALOG_INPUT);
   light = ((light/15)+1);
-  if (light > 100){
-    light = 100;
+  if (light > 10){
+    light = 10;
   }
   
   //Sets all neopixels blank
@@ -210,8 +210,8 @@ void drawclock(){
 
   uint16_t light = analogRead(ANALOG_INPUT);
   light = ((light)+1);
-  if (light > 100){
-    light = 100;
+  if (light > 50){
+    light = 50;
   }
   
   // Grab the current hours, minutes, seconds from the GPS.
@@ -345,8 +345,8 @@ void datashow(){
   // Light sensor values
   uint16_t light = analogRead(ANALOG_INPUT);
   light = ((light/10)+1);
-  if (light > 100){
-    light = 100;
+  if (light > 50){
+    light = 50;
   }
 
   //Button values
