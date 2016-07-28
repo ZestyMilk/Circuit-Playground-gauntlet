@@ -173,6 +173,8 @@ void loop() {
   
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
 SIGNAL(TIMER0_COMPA_vect) {
   // Use a timer interrupt once a millisecond to check for new GPS data.
   // This piggybacks on Arduino's internal clock timer for the millis()
@@ -189,27 +191,7 @@ void enableGPSInterrupt() {
 }
 
 
-
-
-
-void clearstrand(){
-  uint16_t light = analogRead(ANALOG_INPUT);
-  light = ((light/15)+1);
-  if (light > 10){
-    light = 10;
-  }
-  
-  //Sets all neopixels blank
-  for(int i=0; i<NUMPIXELS; i++){
-    pixels.setPixelColor(i, 0, 0, 27-light);
-    markers.setPixelColor(i, light*4, light*4, light*8);
-    ring.setPixelColor(i, light/5, light/5, light/3);
-    strip.setPixelColor(i, strip_color);
-  }
-}
-
-
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 void wrapper(){
@@ -239,7 +221,7 @@ void wrapper(){
 }
 
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 void drawclock(){
@@ -316,7 +298,7 @@ void drawclock(){
 }
 
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 void datashow(){
@@ -357,6 +339,10 @@ void datashow(){
   }
 }
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 void torch(){
   strip.setPixelColor(0, 50, 50, 120);
   strip.setPixelColor(1, 50, 50, 120);
@@ -370,7 +356,27 @@ void torch(){
 }
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+void clearstrand(){
+  uint16_t light = analogRead(ANALOG_INPUT);
+  light = ((light/15)+1);
+  if (light > 10){
+    light = 10;
+  }
+  
+  //Sets all neopixels blank
+  for(int i=0; i<NUMPIXELS; i++){
+    pixels.setPixelColor(i, 0, 0, 27-light);
+    markers.setPixelColor(i, light*4, light*4, light*8);
+    ring.setPixelColor(i, light/5, light/5, light/3);
+    strip.setPixelColor(i, strip_color);
+  }
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 void alarm() {
@@ -413,7 +419,7 @@ void alarm() {
 }
 
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 void warning() {
