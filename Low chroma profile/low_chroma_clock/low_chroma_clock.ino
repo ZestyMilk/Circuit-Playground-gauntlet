@@ -188,6 +188,10 @@ void enableGPSInterrupt() {
   TIMSK0 |= _BV(OCIE0A);
 }
 
+
+
+
+
 void clearstrand(){
   uint16_t light = analogRead(ANALOG_INPUT);
   light = ((light/15)+1);
@@ -204,6 +208,40 @@ void clearstrand(){
   }
 }
 
+
+
+
+
+void wrapper(){
+  //Button values
+  uint16_t buttonL = digitalRead(BUTTONL);
+  uint16_t buttonR = digitalRead(BUTTONR);
+  uint16_t buttonS = digitalRead(BUTTONS);
+  uint16_t buttonstate = 1;
+
+  if (buttonS == HIGH){
+      warning();
+  }else{
+      drawclock();
+  }
+  
+  if (buttonL == HIGH){
+      torch();
+  }else{
+      drawclock();
+  }
+  
+  if (buttonR == HIGH){
+      alarm();
+  }else{
+      drawclock();
+  }
+}
+
+
+
+
+
 void drawclock(){
   
   uint16_t light = analogRead(ANALOG_INPUT);
@@ -215,12 +253,6 @@ void drawclock(){
   uint32_t hour_color    = pixels.Color ( 65+(light/2), 65+(light/2), 85+(light/2));
   uint32_t minutes_color = pixels.Color ( 35+(light/2), 35+(light/2), 55+(light/2));
   uint32_t second_color  = pixels.Color ( 30, 30, 50);
-
-  //Button values
-  uint16_t buttonL = digitalRead(BUTTONL);
-  uint16_t buttonR = digitalRead(BUTTONR);
-  uint16_t buttonS = digitalRead(BUTTONS);
-  uint16_t buttonstate = 1;
   
   // Grab the current hours, minutes, seconds from the GPS.
   // This will only be set once the GPS has a fix!  Make sure to add
@@ -280,93 +312,12 @@ void drawclock(){
       d=seconds;
     }
   }
-
-  if (buttonL == HIGH){
-      torch();
-      buttonstate == 3;
-  }else{
-      datashow();
-  }
-  
-  if (buttonR == HIGH){
-      alarm();
-      buttonstate == 1;
-  }else{
-      datashow();
-  }
-  
-  if (buttonS == HIGH){
-      //torch();
-      //alarm();
-      warning();
-  }else{
-      datashow();
-  }
-}
-
-//copied from NeoPixel ring clock face by Kevin ALford and modified by Becky Stern for Adafruit Industries
-void add_color (uint8_t position, uint32_t color)
-{
-  uint32_t blended_color = blend (pixels.getPixelColor (position), color);
- 
-  /* Gamma mapping */
-  uint8_t r,b,g;
- 
-  r = (uint8_t)(blended_color >> 16),
-  g = (uint8_t)(blended_color >>  8),
-  b = (uint8_t)(blended_color >>  0);
- 
-  pixels.setPixelColor (position, blended_color);
+  datashow();
 }
 
 
-void ringadd_color (uint8_t position, uint32_t color)
-{
-  uint32_t blended_color2 = blend (ring.getPixelColor (position), color);
- 
-  /* Gamma mapping */
-  uint8_t r,b,g;
- 
-  r = (uint8_t)(blended_color2 >> 16),
-  g = (uint8_t)(blended_color2 >>  8),
-  b = (uint8_t)(blended_color2 >>  0);
- 
-  ring.setPixelColor (position, blended_color2);
-}
 
 
-uint32_t blend (uint32_t color1, uint32_t color2)
-{
-  uint8_t r1,g1,b1;
-  uint8_t r2,g2,b2;
-  uint8_t r3,g3,b3;
- 
-  r1 = (uint8_t)(color1 >> 16),
-  g1 = (uint8_t)(color1 >>  8),
-  b1 = (uint8_t)(color1 >>  0);
- 
-  r2 = (uint8_t)(color2 >> 16),
-  g2 = (uint8_t)(color2 >>  8),
-  b2 = (uint8_t)(color2 >>  0);
- 
- 
-  return pixels.Color (constrain (r1+r2, 0, 255), constrain (g1+g2, 0, 255), constrain (b1+b2, 0, 255));
-}
-
-void gammacorrect(){
-  uint8_t r,b,g;
-  for(int i=0; i<NUMPIXELS; i++){ //increment through all pixels
-    uint32_t raw_color= pixels.getPixelColor(i); //fetch color
-    r = (uint8_t)(raw_color >> 16); //extracting colour values from the uint32
-    g = (uint8_t)(raw_color >>  8);
-    b = (uint8_t)(raw_color >>  0);
-    r = gamma[r]; //select pixel intensity from colour value using gamma chart
-    g = gamma[g];
-    b = gamma[b];
-    pixels.setPixelColor (i, pixels.Color(r,g,b)); //jam it back in
-  
-  }
-}
 
 void datashow(){
 
@@ -418,6 +369,10 @@ void torch(){
   strip.setPixelColor(8, 50, 50, 120);
 }
 
+
+
+
+
 void alarm() {
   static unsigned long previousMillis = 0;
   static unsigned long previousMillis2 = 200;
@@ -457,6 +412,10 @@ void alarm() {
   }
 }
 
+
+
+
+
 void warning() {
   for (int j=0; j < 256; j++) {     // cycle all 256 colors in the wheel
     for (int q=0; q < 3; q++) {
@@ -485,3 +444,55 @@ uint32_t Wheel(byte WheelPos) {
   return strip.Color(WheelPos, 0, 0);
 }
 
+
+
+
+///////////////// BORING SUPPORTING STUFF /////////////////
+
+//copied from NeoPixel ring clock face by Kevin ALford and modified by Becky Stern for Adafruit Industries
+void add_color (uint8_t position, uint32_t color)
+{
+  uint32_t blended_color = blend (pixels.getPixelColor (position), color);
+ 
+  /* Gamma mapping */
+  uint8_t r,b,g;
+ 
+  r = (uint8_t)(blended_color >> 16),
+  g = (uint8_t)(blended_color >>  8),
+  b = (uint8_t)(blended_color >>  0);
+ 
+  pixels.setPixelColor (position, blended_color);
+}
+
+uint32_t blend (uint32_t color1, uint32_t color2)
+{
+  uint8_t r1,g1,b1;
+  uint8_t r2,g2,b2;
+  uint8_t r3,g3,b3;
+ 
+  r1 = (uint8_t)(color1 >> 16),
+  g1 = (uint8_t)(color1 >>  8),
+  b1 = (uint8_t)(color1 >>  0);
+ 
+  r2 = (uint8_t)(color2 >> 16),
+  g2 = (uint8_t)(color2 >>  8),
+  b2 = (uint8_t)(color2 >>  0);
+ 
+ 
+  return pixels.Color (constrain (r1+r2, 0, 255), constrain (g1+g2, 0, 255), constrain (b1+b2, 0, 255));
+}
+
+void gammacorrect(){
+  uint8_t r,b,g;
+  for(int i=0; i<NUMPIXELS; i++){ //increment through all pixels
+    uint32_t raw_color= pixels.getPixelColor(i); //fetch color
+    r = (uint8_t)(raw_color >> 16); //extracting colour values from the uint32
+    g = (uint8_t)(raw_color >>  8);
+    b = (uint8_t)(raw_color >>  0);
+    r = gamma[r]; //select pixel intensity from colour value using gamma chart
+    g = gamma[g];
+    b = gamma[b];
+    pixels.setPixelColor (i, pixels.Color(r,g,b)); //jam it back in
+  
+  }
+}
