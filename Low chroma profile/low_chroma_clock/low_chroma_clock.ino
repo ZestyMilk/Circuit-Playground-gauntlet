@@ -79,9 +79,7 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(N_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ
 Adafruit_GPS gps(&Serial1);      //hardware serial
 
 uint32_t milli_color   = pixels.Color ( 80, 80, 200); 
-uint32_t hour_color    = pixels.Color ( 100, 100, 120);
-uint32_t minutes_color = pixels.Color ( 70, 70, 100);
-uint32_t second_color  = pixels.Color ( 30, 30, 50);
+
 uint32_t marker_color  = pixels.Color ( 10, 10, 20);
 uint32_t ring_color    = pixels.Color ( 1, 1, 2);
 uint32_t vu_color      = pixels.Color ( 10, 0, 0);
@@ -199,7 +197,7 @@ void clearstrand(){
   
   //Sets all neopixels blank
   for(int i=0; i<NUMPIXELS; i++){
-    pixels.setPixelColor(i, off_color);
+    pixels.setPixelColor(i, 0, 0, 27-light);
     markers.setPixelColor(i, light*4, light*4, light*8);
     ring.setPixelColor(i, light/5, light/5, light/3);
     strip.setPixelColor(i, strip_color);
@@ -207,12 +205,18 @@ void clearstrand(){
 }
 
 void drawclock(){
-
+  
   uint16_t light = analogRead(ANALOG_INPUT);
   light = ((light)+1);
   if (light > 50){
     light = 50;
   }
+
+  uint32_t hour_color    = pixels.Color ( 65+(light/2), 65+(light/2), 85+(light/2));
+  uint32_t minutes_color = pixels.Color ( 35+(light/2), 35+(light/2), 55+(light/2));
+  uint32_t second_color  = pixels.Color ( 30, 30, 50);
+
+  uint16_t buttonS = digitalRead(BUTTONS);
   
   // Grab the current hours, minutes, seconds from the GPS.
   // This will only be set once the GPS has a fix!  Make sure to add
@@ -272,7 +276,12 @@ void drawclock(){
       d=seconds;
     }
   }
-  datashow();
+
+  if (buttonS == HIGH){
+      torch();
+  }else{
+      datashow();
+  }
 }
 
 //copied from NeoPixel ring clock face by Kevin ALford and modified by Becky Stern for Adafruit Industries
@@ -305,8 +314,7 @@ void ringadd_color (uint8_t position, uint32_t color)
   ring.setPixelColor (position, blended_color2);
 }
 
- 
- 
+
 uint32_t blend (uint32_t color1, uint32_t color2)
 {
   uint8_t r1,g1,b1;
@@ -352,7 +360,6 @@ void datashow(){
   //Button values
   uint16_t buttonL = digitalRead(BUTTONL);
   uint16_t buttonR = digitalRead(BUTTONR);
-  uint16_t buttonS = digitalRead(BUTTONS);
   uint16_t buttonstate = 1;
   
   static unsigned long previousMillis = 0;
@@ -365,71 +372,44 @@ void datashow(){
   int o=(random(0,3));
   int p=(random(0,3));
   
-  if (buttonS == HIGH){
-        strip.setPixelColor(0, 50, 50, 120);
-        strip.setPixelColor(1, 50, 50, 120);
-        strip.setPixelColor(2, 50, 50, 120);
-        strip.setPixelColor(3, 50, 50, 120);
-        strip.setPixelColor(4, 50, 50, 120);
-        strip.setPixelColor(5, 50, 50, 120);
-        strip.setPixelColor(6, 50, 50, 120);
-        strip.setPixelColor(7, 50, 50, 120);
-        strip.setPixelColor(8, 50, 50, 120);
-      }else{
-      
-    if (currentMillis - previousMillis2 >= interval2) {
-    previousMillis2 += interval2;
-    strip.setPixelColor(4, 15, 15, 30);
-    }
-    
-    if (currentMillis - previousMillis >= interval) {
-      previousMillis += interval;
+  if (currentMillis - previousMillis2 >= interval2) {
+  previousMillis2 += interval2;
+  strip.setPixelColor(4, light, light, (light*2));
+  }
   
-      strip.setPixelColor(0, u*light, u*light, (u*light)*2);
-      strip.setPixelColor(1, i*light, i*light, (i*light)*2);
-      strip.setPixelColor(2, o*light, o*light, (o*light)*2);
-      strip.setPixelColor(3, p*light, p*light, (p*light)*2);
-      strip.setPixelColor(5, p*light, p*light, (p*light)*2);
-      strip.setPixelColor(6, o*light, o*light, (o*light)*2);
-      strip.setPixelColor(7, i*light, i*light, (i*light)*2);
-      strip.setPixelColor(8, u*light, u*light, (u*light)*2);
-    }
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis += interval;
+
+    strip.setPixelColor(0, u*light, u*light, (u*light)*2);
+    strip.setPixelColor(1, i*light, i*light, (i*light)*2);
+    strip.setPixelColor(2, o*light, o*light, (o*light)*2);
+    strip.setPixelColor(3, p*light, p*light, (p*light)*2);
+    strip.setPixelColor(5, p*light, p*light, (p*light)*2);
+    strip.setPixelColor(6, o*light, o*light, (o*light)*2);
+    strip.setPixelColor(7, i*light, i*light, (i*light)*2);
+    strip.setPixelColor(8, u*light, u*light, (u*light)*2);
+  }
   if (buttonL == HIGH){
         strip.setPixelColor(3, 0, 0, 100);
         strip.setPixelColor(5, 0, 0, 0);
         buttonstate == 3;
-      }
+  }
   if (buttonR == HIGH){
         strip.setPixelColor(3, 0, 0, 0);
         strip.setPixelColor(5, 0, 0, 100);
         buttonstate == 1;
-      }
   }
 }
 
-void pulsered() {
-  static unsigned long previousMillis = 0;
-  unsigned long currentMillis = millis();
-  const long interval = 100;
-
-  if (currentMillis - previousMillis >= interval) {
-      previousMillis += interval;
-      
-    for(int j = 0; j < 20 ; j++){
-        for(uint16_t i=0; i<pixels.numPixels(); i++) {
-            pixels.setPixelColor(i, pixels.Color(gamma[j],0,0) );
-        }
-     strip.show();
-    }
-  }
-  if (currentMillis - previousMillis >= interval*2) {
-      previousMillis += interval;
-      
-    for(int j = 20; j >= 0 ; j--){
-        for(uint16_t i=0; i<pixels.numPixels(); i++) {
-            pixels.setPixelColor(i, pixels.Color(gamma[j],0,0) );
-        }
-        strip.show();
-     }
-  }
+void torch(){
+  strip.setPixelColor(0, 50, 50, 120);
+  strip.setPixelColor(1, 50, 50, 120);
+  strip.setPixelColor(2, 50, 50, 120);
+  strip.setPixelColor(3, 50, 50, 120);
+  strip.setPixelColor(4, 50, 50, 120);
+  strip.setPixelColor(5, 50, 50, 120);
+  strip.setPixelColor(6, 50, 50, 120);
+  strip.setPixelColor(7, 50, 50, 120);
+  strip.setPixelColor(8, 50, 50, 120);
 }
+
