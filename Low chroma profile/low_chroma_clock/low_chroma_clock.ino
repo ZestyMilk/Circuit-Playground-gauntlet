@@ -278,7 +278,9 @@ void drawclock(){
   }
 
   if (buttonS == HIGH){
-      torch();
+      //torch();
+      //alarm();
+      warning();
   }else{
       datashow();
   }
@@ -411,5 +413,72 @@ void torch(){
   strip.setPixelColor(6, 50, 50, 120);
   strip.setPixelColor(7, 50, 50, 120);
   strip.setPixelColor(8, 50, 50, 120);
+}
+
+void alarm() {
+  static unsigned long previousMillis = 0;
+  static unsigned long previousMillis2 = 200;
+  unsigned long currentMillis = millis();
+  const long interval = 1300;
+  const long interval2 = 1300;
+
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis += interval;
+    for(int j = 0; j < 150 ; j++){
+       for(uint16_t i=0; i<strip.numPixels(); i++) {
+          strip.setPixelColor(i, strip.Color(gamma[j],0,0) );
+          }
+        strip.show();
+    }
+    for(int j = 20; j >= 0 ; j--){
+        for(uint16_t i=0; i<strip.numPixels(); i++) {
+            strip.setPixelColor(i, strip.Color(gamma[j],0,0) );
+          }
+        strip.show();
+    }
+  }
+  if (currentMillis - previousMillis2 >= interval2) {
+    previousMillis2 += interval2;
+    for(int j = 0; j < 150 ; j++){
+       for(uint16_t i=0; i<strip.numPixels(); i++) {
+          strip.setPixelColor(i, strip.Color(gamma[j],0,0) );
+          }
+        strip.show();
+   }
+    for(int j = 20; j >= 0 ; j--){
+        for(uint16_t i=0; i<strip.numPixels(); i++) {
+            strip.setPixelColor(i, strip.Color(gamma[j],0,0) );
+          }
+        strip.show();
+    }
+  }
+}
+
+void warning() {
+  for (int j=0; j < 256; j++) {     // cycle all 256 colors in the wheel
+    for (int q=0; q < 3; q++) {
+      for (uint16_t i=0; i < strip.numPixels(); i=i+3) {
+        strip.setPixelColor(i+q, Wheel( (i+j) % 255));    //turn every third pixel on
+      }
+      strip.show();
+      
+      for (uint16_t i=0; i < strip.numPixels(); i=i+3) {
+        strip.setPixelColor(i+q, 0);        //turn every third pixel off
+      }
+    }
+  }
+}
+
+uint32_t Wheel(byte WheelPos) {
+  WheelPos = 100 - WheelPos;
+  if(WheelPos < 85) {
+    return strip.Color(100 - WheelPos, 0, 0);
+  }
+  if(WheelPos < 170) {
+    WheelPos -= 85;
+    return strip.Color(0, 0, 0);
+  }
+  WheelPos -= 170;
+  return strip.Color(WheelPos, 0, 0);
 }
 
