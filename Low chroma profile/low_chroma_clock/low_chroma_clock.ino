@@ -216,7 +216,11 @@ void drawclock(){
   uint32_t minutes_color = pixels.Color ( 35+(light/2), 35+(light/2), 55+(light/2));
   uint32_t second_color  = pixels.Color ( 30, 30, 50);
 
+  //Button values
+  uint16_t buttonL = digitalRead(BUTTONL);
+  uint16_t buttonR = digitalRead(BUTTONR);
   uint16_t buttonS = digitalRead(BUTTONS);
+  uint16_t buttonstate = 1;
   
   // Grab the current hours, minutes, seconds from the GPS.
   // This will only be set once the GPS has a fix!  Make sure to add
@@ -277,6 +281,20 @@ void drawclock(){
     }
   }
 
+  if (buttonL == HIGH){
+      torch();
+      buttonstate == 3;
+  }else{
+      datashow();
+  }
+  
+  if (buttonR == HIGH){
+      alarm();
+      buttonstate == 1;
+  }else{
+      datashow();
+  }
+  
   if (buttonS == HIGH){
       //torch();
       //alarm();
@@ -359,11 +377,6 @@ void datashow(){
     light = 50;
   }
 
-  //Button values
-  uint16_t buttonL = digitalRead(BUTTONL);
-  uint16_t buttonR = digitalRead(BUTTONR);
-  uint16_t buttonstate = 1;
-  
   static unsigned long previousMillis = 0;
   static unsigned long previousMillis2 = 0;
   unsigned long currentMillis = millis();
@@ -391,16 +404,6 @@ void datashow(){
     strip.setPixelColor(7, i*light, i*light, (i*light)*2);
     strip.setPixelColor(8, u*light, u*light, (u*light)*2);
   }
-  if (buttonL == HIGH){
-        strip.setPixelColor(3, 0, 0, 100);
-        strip.setPixelColor(5, 0, 0, 0);
-        buttonstate == 3;
-  }
-  if (buttonR == HIGH){
-        strip.setPixelColor(3, 0, 0, 0);
-        strip.setPixelColor(5, 0, 0, 100);
-        buttonstate == 1;
-  }
 }
 
 void torch(){
@@ -426,13 +429,13 @@ void alarm() {
     previousMillis += interval;
     for(int j = 0; j < 150 ; j++){
        for(uint16_t i=0; i<strip.numPixels(); i++) {
-          strip.setPixelColor(i, strip.Color(gamma[j],0,0) );
+          strip.setPixelColor(i, strip.Color(gamma[j],gamma[j],0) );
           }
         strip.show();
     }
     for(int j = 20; j >= 0 ; j--){
         for(uint16_t i=0; i<strip.numPixels(); i++) {
-            strip.setPixelColor(i, strip.Color(gamma[j],0,0) );
+            strip.setPixelColor(i, strip.Color(gamma[j],gamma[j],0) );
           }
         strip.show();
     }
@@ -441,13 +444,13 @@ void alarm() {
     previousMillis2 += interval2;
     for(int j = 0; j < 150 ; j++){
        for(uint16_t i=0; i<strip.numPixels(); i++) {
-          strip.setPixelColor(i, strip.Color(gamma[j],0,0) );
+          strip.setPixelColor(i, strip.Color(gamma[j],gamma[j],0) );
           }
         strip.show();
    }
     for(int j = 20; j >= 0 ; j--){
         for(uint16_t i=0; i<strip.numPixels(); i++) {
-            strip.setPixelColor(i, strip.Color(gamma[j],0,0) );
+            strip.setPixelColor(i, strip.Color(gamma[j],gamma[j],0) );
           }
         strip.show();
     }
