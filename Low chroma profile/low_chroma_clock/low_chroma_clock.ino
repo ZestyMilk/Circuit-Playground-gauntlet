@@ -96,6 +96,10 @@ void error(const __FlashStringHelper*err) {
   while (1);
 }
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 void setup() {
   delay(500);
   // Setup function runs once at startup to initialize the display and GPS.
@@ -130,6 +134,10 @@ void setup() {
   CircuitPlayground.playTone(494, TONE_DURATION_MS);
   */
 }
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 void loop() {
 
@@ -188,36 +196,6 @@ void enableGPSInterrupt() {
   // in the middle and call the "Compare A" function above
   OCR0A = 0xAF;
   TIMSK0 |= _BV(OCIE0A);
-}
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-void wrapper(){
-  //Button values
-  uint16_t buttonL = digitalRead(BUTTONL);
-  uint16_t buttonR = digitalRead(BUTTONR);
-  uint16_t buttonS = digitalRead(BUTTONS);
-  uint16_t buttonstate = 1;
-
-  if (buttonS == HIGH){
-      warning();
-  }else{
-      drawclock();
-  }
-  
-  if (buttonL == HIGH){
-      torch();
-  }else{
-      drawclock();
-  }
-  
-  if (buttonR == HIGH){
-      alarm();
-  }else{
-      drawclock();
-  }
 }
 
 
@@ -294,7 +272,7 @@ void drawclock(){
       d=seconds;
     }
   }
-  datashow();
+  buttoncheck();
 }
 
 
@@ -343,6 +321,36 @@ void datashow(){
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+void buttoncheck(){
+  //Button values
+  uint16_t buttonL = digitalRead(BUTTONL);
+  uint16_t buttonR = digitalRead(BUTTONR);
+  uint16_t buttonS = digitalRead(BUTTONS);
+  uint16_t buttonstate = 1;
+
+  if (buttonS == HIGH){
+      warning();
+  }else{
+      datashow();
+  }
+  
+  if (buttonL == HIGH){
+      torch();
+  }else{
+      datashow();
+  }
+  
+  if (buttonR == HIGH){
+      alarm();
+  }else{
+      datashow();
+  }
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 void torch(){
   strip.setPixelColor(0, 50, 50, 120);
   strip.setPixelColor(1, 50, 50, 120);
@@ -353,26 +361,6 @@ void torch(){
   strip.setPixelColor(6, 50, 50, 120);
   strip.setPixelColor(7, 50, 50, 120);
   strip.setPixelColor(8, 50, 50, 120);
-}
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-void clearstrand(){
-  uint16_t light = analogRead(ANALOG_INPUT);
-  light = ((light/15)+1);
-  if (light > 10){
-    light = 10;
-  }
-  
-  //Sets all neopixels blank
-  for(int i=0; i<NUMPIXELS; i++){
-    pixels.setPixelColor(i, 0, 0, 27-light);
-    markers.setPixelColor(i, light*4, light*4, light*8);
-    ring.setPixelColor(i, light/5, light/5, light/3);
-    strip.setPixelColor(i, strip_color);
-  }
 }
 
 
@@ -393,6 +381,7 @@ void alarm() {
           strip.setPixelColor(i, strip.Color(gamma[j],gamma[j],0) );
           }
         strip.show();
+        CircuitPlayground.playTone(494, TONE_DURATION_MS);
     }
     for(int j = 20; j >= 0 ; j--){
         for(uint16_t i=0; i<strip.numPixels(); i++) {
@@ -408,6 +397,7 @@ void alarm() {
           strip.setPixelColor(i, strip.Color(gamma[j],gamma[j],0) );
           }
         strip.show();
+        CircuitPlayground.playTone(494, TONE_DURATION_MS);
    }
     for(int j = 20; j >= 0 ; j--){
         for(uint16_t i=0; i<strip.numPixels(); i++) {
@@ -429,6 +419,7 @@ void warning() {
         strip.setPixelColor(i+q, Wheel( (i+j) % 255));    //turn every third pixel on
       }
       strip.show();
+      CircuitPlayground.playTone(320, TONE_DURATION_MS);
       
       for (uint16_t i=0; i < strip.numPixels(); i=i+3) {
         strip.setPixelColor(i+q, 0);        //turn every third pixel off
@@ -450,6 +441,25 @@ uint32_t Wheel(byte WheelPos) {
   return strip.Color(WheelPos, 0, 0);
 }
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+void clearstrand(){
+  uint16_t light = analogRead(ANALOG_INPUT);
+  light = ((light/15)+1);
+  if (light > 10){
+    light = 10;
+  }
+  
+  //Sets all neopixels blank
+  for(int i=0; i<NUMPIXELS; i++){
+    pixels.setPixelColor(i, 0, 0, 27-light);
+    markers.setPixelColor(i, light*4, light*4, light*8);
+    ring.setPixelColor(i, light/5, light/5, light/3);
+    strip.setPixelColor(i, strip_color);
+  }
+}
 
 
 
